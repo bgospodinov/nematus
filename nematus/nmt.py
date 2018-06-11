@@ -273,7 +273,7 @@ def train(config, sess):
             if config.dispFreq and progress.uidx % config.dispFreq == 0:
                 duration = time.time() - last_time
                 disp_time = datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')
-                logging.info('{0} Epoch: {1} Update: {2} Loss/word: {3} Words/sec: {4} Sents/sec: {5}'.format(disp_time, progress.eidx, progress.uidx, total_loss/n_words, n_words/duration, n_sents/duration))
+                logging.info('{} Epoch: {} Update: {} Loss/sentence: {} Loss/word: {} Words/sec: {} Sents/sec: {}'.format(disp_time, progress.eidx, progress.uidx, total_loss/n_sents, total_loss/n_words, n_words/duration, n_sents/duration))
                 last_time = time.time()
                 total_loss = 0.
                 n_sents = 0
