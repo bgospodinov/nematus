@@ -426,7 +426,7 @@ def validate(config, sess, valid_text_iterator, model, normalization_alpha=0):
         total_loss += loss_per_sentence_out.sum()
         total_seen += x_v_in.shape[2]
         costs += list(loss_per_sentence_out)
-        logging.info( "Seen {0}".format(total_seen))
+    logging.info( "Seen {0}".format(total_seen))
     logging.info('Validation loss (AVG/SUM/N_SENT): {0} {1} {2}'.format(total_loss/total_seen, total_loss, total_seen))
     return costs
 
