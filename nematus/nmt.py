@@ -14,7 +14,7 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
 from threading import Thread
-import queue
+from queue import Queue
 from datetime import datetime
 from collections import OrderedDict
 
@@ -485,17 +485,19 @@ def parse_args():
     # parallel training corpus (source and target). Hidden option for backward compatibility
     data.add_argument('--datasets', type=str, metavar='PATH', nargs=2,
                       help=argparse.SUPPRESS)
-    data.add_argument('--dictionaries', type=str, required=True, metavar='PATH', nargs="+",
+    data.add_argument('--dictionaries', type=str, metavar='PATH', nargs="+",
                       help="network vocabularies (one per source factor, plus target vocabulary)")
     data.add_argument('--saveFreq', type=int, default=30000, metavar='INT',
                       help="save frequency (default: %(default)s)")
     data.add_argument('--model', '--saveto', type=str, default='model', metavar='PATH', dest='saveto',
                       help="model file name (default: %(default)s)")
+    data.add_argument('--load_model_config', action='store_true',
+                      help="initialize configuration with model config")
     data.add_argument('--reload', type=str, default=None, metavar='PATH',
                       help="load existing model from this path. Set to \"latest_checkpoint\" to reload the latest checkpoint in the same directory of --saveto")
     data.add_argument('--no_reload_training_progress', action='store_false', dest='reload_training_progress',
                       help="don't reload training progress (only used if --reload is enabled)")
-    data.add_argument('--summary_dir', type=str, required=False, metavar='PATH',
+    data.add_argument('--summary_dir', type=str, metavar='PATH',
                       help="directory for saving summaries (default: same directory as the --saveto file)")
     data.add_argument('--summaryFreq', type=int, default=0, metavar='INT',
                       help="Save summaries after INT updates, if 0 do not save summaries (default: %(default)s)")
@@ -620,6 +622,28 @@ def parse_args():
     translate.add_argument('--translation_maxlen', type=int, default=200, metavar='INT',
                            help="Maximum length of translation output sentence (default: %(default)s)")
     config = parser.parse_args()
+
+    if config.load_model_config:
+        if not config.saveto:
+            logging.error("--model/--saveto is mandatory when --load_model_config flag is used.")
+            sys.exit(1)
+        else:
+            # config of the model
+            model_config = load_config(config.saveto)
+            logging.info("Loading default model config for {}".format(config.saveto))
+            # arguments explicitly passed by the user have higher priority over the loaded model arguments
+            # but default configuration arguments have lower priority than loaded model arguments
+            # therefore the variable below lists the arguments from the model config that should be ignored in favour
+            # of user's explicit parameters
+            model_arguments_to_be_ignored = [arg[2:] for arg in sys.argv if arg.startswith('--') if arg[2:] in model_config]
+            for k, _ in vars(config).items():
+                if k not in model_arguments_to_be_ignored and k in model_config:
+                    logging.info("Overwriting default configuration with parameter {} from model config".format(k))
+                    vars(config)[k] = model_config[k]
+
+    if not config.dictionaries:
+        logging.error('--dictionaries required')
+        sys.exit(1)
 
     # allow "--datasets" for backward compatibility
     if config.datasets:
