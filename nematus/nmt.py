@@ -9,6 +9,7 @@ import logging
 import time
 import argparse
 import numpy as np
+import json
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
@@ -283,7 +284,7 @@ def train(config, sess):
             objective_value = out_values[2]
             total_loss += objective_value * batch_size
             n_sents += batch_size
-            n_words += int(numpy.sum(y_mask_in))
+            n_words += int(np.sum(y_mask_in))
             progress.uidx += 1
 
             if write_summary_for_this_batch:
@@ -440,7 +441,7 @@ def validate(config, sess, valid_text_iterator, model, normalization_alpha=0):
 
         # normalize scores according to output length
         if normalization_alpha:
-            adjusted_lengths = numpy.array([numpy.count_nonzero(s) ** normalization_alpha for s in y_v_mask_in.T])
+            adjusted_lengths = np.array([np.count_nonzero(s) ** normalization_alpha for s in y_v_mask_in.T])
             loss_per_sentence_out /= adjusted_lengths
 
         total_loss += loss_per_sentence_out.sum()
