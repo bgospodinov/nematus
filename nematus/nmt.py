@@ -639,7 +639,7 @@ def parse_args():
             model_arguments_to_be_ignored = [arg[2:] for arg in sys.argv if arg.startswith('--') if arg[2:] in model_config]
             for k, _ in vars(config).items():
                 if k not in model_arguments_to_be_ignored and k in model_config:
-                    logging.info("Overwriting default configuration with parameter {} from model config".format(k))
+                    logging.info("Overwriting default configuration with parameter {}={} from model config".format(k, model_config[k]))
                     vars(config)[k] = model_config[k]
 
     if not config.dictionaries:
