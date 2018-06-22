@@ -167,6 +167,7 @@ def load_data(config):
         use_factor=(config.factors > 1),
         maxibatch_size=config.maxibatch_size,
         token_batch_size=config.token_batch_size,
+        seed=config.random_seed,
         keep_data_in_memory=config.keep_train_set_in_memory)
 
     if config.validFreq and config.valid_source_dataset and config.valid_target_dataset:
@@ -183,7 +184,8 @@ def load_data(config):
             sort_by_length=True,
             use_factor=(config.factors > 1),
             maxibatch_size=config.maxibatch_size,
-            token_batch_size=config.valid_token_batch_size)
+            token_batch_size=config.valid_token_batch_size,
+            seed=config.random_seed)
     else:
         logging.info('no validation set loaded')
         valid_text_iterator = None
@@ -622,6 +624,9 @@ def parse_args():
                            help="Number of threads to use for beam search (default: %(default)s)")
     translate.add_argument('--translation_maxlen', type=int, default=200, metavar='INT',
                            help="Maximum length of translation output sentence (default: %(default)s)")
+
+    translate.add_argument('--random_seed', type=int, default=None, metavar='INT',
+                           help="Random seed of tf graph and numpy (default: %(default)s)")
     config = parser.parse_args()
 
     if config.load_model_config:
@@ -742,10 +747,21 @@ if __name__ == "__main__":
 
     config = parse_args()
     logging.info(config)
-    with tf.Session() as sess:
-        if config.translate_valid:
-            translate(config, sess)
-        elif config.run_validation:
-            validate_helper(config, sess)
-        else:
-            train(config, sess)
+
+    if config.random_seed:
+        logging.info("Setting numpy random seed to {}".format(config.random_seed))
+        np.random.seed(config.random_seed)
+
+    g = tf.Graph()
+    with g.as_default():
+        if hasattr(config, 'random_seed') and config.random_seed:
+            logging.info("Setting tf.random_seed to {}".format(config.random_seed))
+            tf.set_random_seed(config.random_seed)
+
+        with tf.Session() as sess:
+            if config.translate_valid:
+                translate(config, sess)
+            elif config.run_validation:
+                validate_helper(config, sess)
+            else:
+                train(config, sess)

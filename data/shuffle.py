@@ -2,9 +2,13 @@ import os
 import sys
 import random
 import tempfile
+import logging
 
 
-def main(files, temporary=False):
+def main(files, temporary=False, seed=None):
+    if seed:
+        logging.info("Setting random seed to {}".format(seed))
+        random.seed(seed)
     fds = [open(ff, encoding='utf-8') for ff in files]
 
     lines = []

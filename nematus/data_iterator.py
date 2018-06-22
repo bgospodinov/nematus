@@ -3,6 +3,7 @@ import numpy
 import gzip
 
 import shuffle
+import logging
 from util import load_dict
 
 
@@ -61,7 +62,12 @@ class TextIterator:
                  use_factor=False,
                  maxibatch_size=20,
                  token_batch_size=0,
+                 seed=None,
                  keep_data_in_memory=False):
+        self.seed = seed
+        if self.seed:
+            logging.info("Setting numpy seed to {}".format(self.seed))
+            numpy.random.seed(self.seed)
         if keep_data_in_memory:
             self.source, self.target = FileWrapper(source), FileWrapper(target)
             if shuffle_each_epoch:
@@ -71,7 +77,7 @@ class TextIterator:
         elif shuffle_each_epoch:
             self.source_orig = source
             self.target_orig = target
-            self.source, self.target = shuffle.main([self.source_orig, self.target_orig], temporary=True)
+            self.source, self.target = shuffle.main([self.source_orig, self.target_orig], temporary=True, seed=self.seed)
         else:
             self.source = fopen(source, 'r')
             self.target = fopen(target, 'r')
@@ -123,7 +129,7 @@ class TextIterator:
                 self.source.shuffle_lines(r)
                 self.target.shuffle_lines(r)
             else:
-                self.source, self.target = shuffle.main([self.source_orig, self.target_orig], temporary=True)
+                self.source, self.target = shuffle.main([self.source_orig, self.target_orig], temporary=True, seed=self.seed)
         else:
             self.source.seek(0)
             self.target.seek(0)

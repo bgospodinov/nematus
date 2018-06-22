@@ -85,6 +85,8 @@ def fill_options(options):
         options['clip_c'] = 1.
     if not 'output_hidden_activation' in options:
         options['output_hidden_activation'] = 'tanh'
+    if not 'random_seed' in options:
+        options['random_seed'] = None
 
 
 # for backwards compatibility with old models

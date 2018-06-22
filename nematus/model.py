@@ -13,6 +13,7 @@ class Decoder(object):
                  dropout_embedding, dropout_hidden):
 
         self.dropout_target = dropout_target
+        self.seed = config.random_seed
         batch_size = tf.shape(x_mask)[1]
 
         with tf.name_scope("initial_state_constructor"):
@@ -137,7 +138,7 @@ class Decoder(object):
                         prev_high_states, base_state, context=att_ctx)
             logits = self.predictor.get_logits(prev_emb, output, att_ctx,
                                                multi_step=False)
-            new_y = tf.multinomial(logits, num_samples=1)
+            new_y = tf.multinomial(logits, num_samples=1, seed=self.seed)
             new_y = tf.cast(new_y, dtype=tf.int32)
             new_y = tf.squeeze(new_y, axis=1)
             new_y = tf.where(tf.equal(prev_y, tf.constant(0, dtype=tf.int32)),
@@ -364,12 +365,12 @@ class StandardModel(object):
             def dropout_source(x):
                 return tf.layers.dropout(
                     x, noise_shape=(tf.shape(x)[0], tf.shape(x)[1], 1),
-                    rate=config.dropout_source, training=self.training)
+                    rate=config.dropout_source, training=self.training, seed=config.random_seed)
         if config.use_dropout and config.dropout_target > 0.0:
             def dropout_target(y):
                 return tf.layers.dropout(
                     y, noise_shape=(tf.shape(y)[0], tf.shape(y)[1], 1),
-                    rate=config.dropout_target, training=self.training)
+                    rate=config.dropout_target, training=self.training, seed=config.random_seed)
 
         # Dropout functions for use within FF, GRU, and attention layers.
         # We use Gal and Ghahramani (2016)-style dropout, so these functions
@@ -380,12 +381,12 @@ class StandardModel(object):
             def dropout_embedding(e):
                 return tf.layers.dropout(e, noise_shape=tf.shape(e),
                                          rate=config.dropout_embedding,
-                                         training=self.training)
+                                         training=self.training, seed=config.random_seed)
         if config.use_dropout and config.dropout_hidden > 0.0:
             def dropout_hidden(h):
                 return tf.layers.dropout(h, noise_shape=tf.shape(h),
                                          rate=config.dropout_hidden,
-                                         training=self.training)
+                                         training=self.training, seed=config.random_seed)
 
         batch_size = tf.shape(self.x)[-1]  # dynamic value
 
