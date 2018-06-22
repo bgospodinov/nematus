@@ -43,7 +43,7 @@ if __name__ == "__main__":
         options.append(argparse.Namespace(**config))
 
     config = options[0]
-    _, _, _, num_to_target = load_dictionaries(config)
+    source_to_num, _, num_to_source, num_to_target = load_dictionaries(config)
 
     sentences = input_file.readlines()
 
@@ -59,29 +59,76 @@ if __name__ == "__main__":
 
     logging.info("NOTE: Length of translations is capped to {}".format(config.translation_maxlen))
 
-    source_to_num, _, _, _ = load_dictionaries(config)
-    lines = []
-    for sent in sentences:
-        line = []
-        for w in sent.strip().split():
-            w = [source_to_num[0][w] if w in source_to_num[0] else 1]
-            line.append(w)
-        lines.append(line)
-    lines = np.array(lines)
-
-    sentences = lines
     n_sent = len(sentences)
+    sentence_tags = []
+    corpora_sentences_counter = 0
 
-    for sentence in sentences:
-        y_dummy = np.zeros(shape=(len(sentence), 1))
-        x, x_mask, _, _ = prepare_data(np.expand_dims(np.array(sentence), axis=0), y_dummy, maxlen=None)
+    # we will automatically detect what the expected tag_unit is
+    if 'ansi' in source_to_num:
+        tag_unit = "word"
+    else:
+        tag_unit = "char"
+
+    for idx, sentence in enumerate(sentences):
+        source = sentence.strip().split()
+        try:
+            source_start_idx = source.index("<w>")
+            source_end_idx = source.index("</w>")
+            source_lctx_idx = source.index("<lc>")
+            source_rctx_idx = source.index("<rc>")
+        except:
+            logging.warning("Skipping {}".format(source))
+            continue
+
+        source_lctx = source[source_start_idx + 1:source_lctx_idx]
+        source_word = source[source_lctx_idx + 1:source_rctx_idx]
+
+        if sentence_tags:
+            word_end_idx = source_lctx_idx
+            for tag in reversed(sentence_tags):
+                if tag_unit == "char":
+                    tag = list("+" + tag)
+                else:
+                    tag = list("+", tag)
+                source[word_end_idx:word_end_idx] = tag
+                try:
+                    word_end_idx = len(source) - source[-1::-1].index("<s>", len(source) - word_end_idx, len(source) - source_start_idx) - 1
+                except:
+                    break
+
+        logging.debug("{}, {}".format(idx, source))
+
+        x_num = [[source_to_num[0][w]] if w in source_to_num[0] else [1] for w in source]
+        y_dummy = np.zeros(shape=(len(x_num), 1))
+        x, x_mask, _, _ = prepare_data(np.expand_dims(np.array(x_num), axis=0), y_dummy, maxlen=None)
         hypotheses = inference.beam_search(models, sess, x, x_mask, settings.beam_width)[0]
+
         if settings.normalization_alpha:
             hypotheses = map(lambda sent_cost: (sent_cost[0], sent_cost[1] / len(sent_cost[0]) ** settings.normalization_alpha), hypotheses)
+
         hypotheses = sorted(hypotheses, key=lambda sent_cost: sent_cost[1])
         translation = seq2words(hypotheses[0][0], num_to_target, join=False)
+
+        try:
+            translation_tag_idx = translation.index("+")
+            translation_end_idx = translation.index("</w>")
+            sentence_tags.append("".join(translation[translation_tag_idx + 1:translation_end_idx]))
+        except:
+            logging.warning("No tag in {} ({})".format(translation, idx))
+            sentence_tags.append("")
+
+        # check if a new sentence begins
+        if source_end_idx - 1 == source_rctx_idx:
+            corpora_sentences_counter += 1
+            sentence_tags = []
+
         output_file.write(" ".join(translation) + "\n")
         output_file.flush()
+        
+        del translation
+
+    if "dev_source" in settings.input.name:
+        assert corpora_sentences_counter == 1513, "Wrong sentence counts detected"
 
     duration = time.time() - start_time
     logging.info('Translated {} sents in {} sec. Speed {} sents/sec'.format(n_sent, duration, n_sent / duration))
