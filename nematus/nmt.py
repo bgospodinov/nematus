@@ -331,7 +331,7 @@ def train(config, sess):
                             'SAMPLE {0}: {1} Cost/Len/Avg {2}/{3}/{4}'.format(i, seq2words(sample, num_to_target), cost,
                                                                               len(sample), cost / len(sample)))
 
-            if config.validFreq and progress.uidx % config.validFreq == 0:
+            if config.validFreq and progress.uidx % config.validFreq == 0 and progress.uidx > config.validBurnIn:
                 costs = validate(config, sess, valid_text_iterator, model)
                 # validation loss is mean of normalized sentence log probs
                 valid_loss = sum(costs) / len(costs)
@@ -598,6 +598,8 @@ def parse_args():
                           help="validation minibatch size (expressed in number of source or target tokens). Sentence-level minibatch size will be dynamic. If this is enabled, valid_batch_size only affects sorting by length. (default: %(default)s)")
     validation.add_argument('--validFreq', type=int, default=10000, metavar='INT',
                             help="validation frequency (default: %(default)s)")
+    validation.add_argument('--validBurnIn', type=int, default=10000, metavar='INT',
+                            help="validation burn in (default: %(default)s)")
     validation.add_argument('--patience', type=int, default=10, metavar='INT',
                             help="early stopping patience (default: %(default)s)")
     validation.add_argument('--run_validation', action='store_true',
