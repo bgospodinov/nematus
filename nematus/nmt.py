@@ -549,7 +549,7 @@ def parse_args():
     network.add_argument('--tie_decoder_embeddings', action="store_true", dest="tie_decoder_embeddings",
                          help="tie the input embeddings of the decoder with the softmax output embeddings")
     network.add_argument('--output_hidden_activation', type=str, default='tanh',
-                         choices=['tanh', 'relu', 'prelu', 'linear'],
+                         choices=['tanh', 'relu', 'leaky_relu', 'elu', 'selu', 'prelu', 'linear'],
                          help='activation function in hidden layer of the output network (default: %(default)s)')
 
     training = parser.add_argument_group('training parameters')

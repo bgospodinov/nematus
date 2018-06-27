@@ -252,6 +252,12 @@ class Predictor(object):
             hidden = tf.tanh(hidden)
         elif self.config.output_hidden_activation == 'relu':
             hidden = tf.nn.relu(hidden)
+        elif self.config.output_hidden_activation == 'leaky_relu':
+            hidden = tf.nn.leaky_relu(hidden)
+        elif self.config.output_hidden_activation == 'elu':
+            hidden = tf.nn.elu(hidden)
+        elif self.config.output_hidden_activation == 'selu':
+            hidden = tf.nn.selu(hidden)
         elif self.config.output_hidden_activation == 'prelu':
             hidden = self.hidden_prelu.forward(hidden)
         elif self.config.output_hidden_activation == 'linear':
