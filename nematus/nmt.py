@@ -335,11 +335,11 @@ def train(config, sess):
                 costs = validate(config, sess, valid_text_iterator, model)
                 # validation loss is mean of normalized sentence log probs
                 valid_loss = sum(costs) / len(costs)
+                progress_path = '{0}.progress.json'.format(config.saveto)
                 if (len(progress.history_errs) == 0 or
                         valid_loss < min(progress.history_errs)):
                     progress.bad_counter = 0
                     saver.save(sess, save_path=config.saveto)
-                    progress_path = '{0}.progress.json'.format(config.saveto)
                     progress.save_to_json(progress_path)
                 else:
                     progress.bad_counter += 1
