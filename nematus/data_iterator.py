@@ -150,6 +150,8 @@ class TextIterator:
         assert len(self.source_buffer) == len(self.target_buffer), 'Buffer size mismatch!'
 
         if len(self.source_buffer) == 0:
+            logging.info("Buffer empty. Attempting to fill buffer...")
+            skipped_lines = 0
             for ss in self.source:
                 ss = ss.split()
                 tt = self.target.readline().split()
@@ -157,6 +159,7 @@ class TextIterator:
                 if self.skip_empty and (len(ss) == 0 or len(tt) == 0):
                     continue
                 if len(ss) > self.maxlen or len(tt) > self.maxlen:
+                    skipped_lines += 1
                     continue
 
                 self.source_buffer.append(ss)
@@ -168,6 +171,9 @@ class TextIterator:
                 self.end_of_data = False
                 self.reset()
                 raise StopIteration
+
+            logging.debug("Buffering finished. Skipped {} out of {} lines ({})".format(skipped_lines, len(self.source_buffer),
+                                                                   skipped_lines // len(self.source_buffer)))
 
             # sort by source/target buffer length
             if self.sort_by_length:
