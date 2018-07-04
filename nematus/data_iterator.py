@@ -172,7 +172,7 @@ class TextIterator:
                 self.reset()
                 raise StopIteration
 
-            logging.debug("Buffering finished. Skipped {} out of {} lines ({})".format(skipped_lines, len(self.source_buffer),
+            logging.info("Buffering finished. Skipped {} out of {} lines ({})".format(skipped_lines, len(self.source_buffer),
                                                                    skipped_lines // len(self.source_buffer)))
 
             # sort by source/target buffer length
