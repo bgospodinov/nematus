@@ -178,6 +178,10 @@ class Translator(object):
         """
         source_batches = []
 
+        if translation_settings.beam_width == 0:
+            translation_settings.beam_width = self._options[0].beam_size
+            logging.info("Ignoring beam_width passed to translate.py. Using model config beam_size instead. beam_width={}".format(translation_settings.beam_width))
+
         try:
             batches, idxs = read_all_lines(self._options[0], input_)
         except exception.Error as x:
